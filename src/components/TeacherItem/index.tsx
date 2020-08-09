@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     View,
     Image,
-    Text
+    Text,
+    Linking
 } from "react-native";
+import AsyncStorage from '@react-native-community/async-storage'
 
 import styles from './styles'
 import { RectButton } from "react-native-gesture-handler";
@@ -11,39 +13,97 @@ import { RectButton } from "react-native-gesture-handler";
 import heartOutlineIcon from '../../assets/images/icons/heart-outline.png';
 import unfavoriteIcon from '../../assets/images/icons/unfavorite.png';
 import whatsappIcon from '../../assets/images/icons/whatsapp.png';
+import api from "../../services/api";
 
-function TeacherItem() {
+export interface Teacher {
+    id: number
+    avatar: string
+    bio: string
+    cost: number
+    name: string
+    subject: string
+    whatsapp: string
+}
+
+interface TeacherItemProps {
+    teacher: Teacher;
+    favorited: boolean;
+}
+
+const TeacherItem: React.FunctionComponent<TeacherItemProps> = ({ teacher, favorited }) => {
+    const [isFavorited, setIsFavorited] = useState(favorited);
+    function handleLinkToWhatsapp() {
+        api.post("connections", {
+            user_id: teacher.id
+        });
+        
+        Linking.openURL(`whatsapp://send?phone=${teacher.whatsapp}`)
+    }
+
+    async function handleToggleFavorite() {
+        const favorites = await AsyncStorage.getItem("favorites");
+
+        let favoritesArray = [];
+
+        if (favorites) {
+            favoritesArray = JSON.parse(favorites);
+        }
+
+        if (isFavorited) {
+            const favoritedIndex = favoritesArray.findIndex((teacherItem: Teacher) => {
+                return teacherItem.id === teacher.id;
+            })
+
+            favoritesArray.splice(favoritedIndex, 1);
+
+            setIsFavorited(false);
+        }
+        else {
+            favoritesArray.push(teacher);
+
+            setIsFavorited(true);
+        }
+
+        await AsyncStorage.setItem("favorites", JSON.stringify(favoritesArray));
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.profile}>
-                <Image style={styles.avatar} source={{ uri: 'https://www.vagalume.com.br/majiko/images/majiko.jpg' }} />
+                <Image style={styles.avatar} source={{ uri: teacher.avatar }} />
                 <View style={styles.profileInfo}>
                     <Text style={styles.name}>
-                        Majiko
+                        {teacher.name}
                     </Text>
                     <Text style={styles.subject}>
-                        Cantora
+                        {teacher.subject}
                     </Text>
                 </View>
             </View>
             <Text style={styles.bio}>
-                Sou uma cantora e compositora japonesa. Começei minha carreira fazendo covers de Nico Nico Douga.
+                {teacher.bio}
             </Text>
             <View style={styles.footer}>
                 <Text style={styles.price}>
                     Preço/hora {'   '}
                     <Text style={styles.priceValue}>
-                        R$ 20,00
+                        {teacher.cost}
                     </Text>
                 </Text>
 
                 <View style={styles.buttonsContainer}>
-                    <RectButton style={[styles.favoriteButton, styles.favorited]}>
+                    <RectButton
+                        onPress={handleToggleFavorite}
+                        style={[
+                            styles.favoriteButton,
+                            isFavorited ? styles.favorited : {}]}>
                         {/* <Image source={heartOutlineIcon} /> */}
-                        <Image source={unfavoriteIcon} />
+                        <Image source={isFavorited ? unfavoriteIcon : heartOutlineIcon} />
                     </RectButton>
 
-                    <RectButton style={styles.contactButton}>
+                    <RectButton
+                        onPress={handleLinkToWhatsapp}
+                        style={styles.contactButton}>
                         <Image source={whatsappIcon} />
                         <Text style={styles.contactButtonText}>
                             Entrar em contato

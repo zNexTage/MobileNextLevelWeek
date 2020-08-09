@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, Image, Text, TouchableOpacity } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
 
@@ -9,15 +9,29 @@ import studyIcon from "../../assets/images/icons/study.png";
 import giveClassesIcon from "../../assets/images/icons/give-classes.png";
 import heartIcon from "../../assets/images/icons/heart.png";
 import { useNavigation } from "@react-navigation/native";
+import api from '../../services/api';
 
 function Landing() {
+    const [totalConnections, setTotalConnections] = useState(0)
+
+    useEffect(() => {
+        api.get('/connections').then((response) => {
+            const { total } = response.data;
+
+            setTotalConnections(total);
+        })
+            .catch((err) => {
+                console.log(err)
+            })
+    }, []);
+
     const navigation = useNavigation();
 
     function handleNavigateToGiveClassesPage() {
         navigation.navigate("GiveClasses");
     }
 
-    function handleNavigateToStudyPages(){
+    function handleNavigateToStudyPages() {
         navigation.navigate("Study");
     }
 
@@ -31,9 +45,9 @@ function Landing() {
                 </Text>
             </Text>
             <View style={styles.buttonsContainer}>
-                <RectButton 
-                onPress={handleNavigateToStudyPages}
-                style={[styles.button, styles.buttonPrimary]}>
+                <RectButton
+                    onPress={handleNavigateToStudyPages}
+                    style={[styles.button, styles.buttonPrimary]}>
                     <Image source={studyIcon} />
 
                     <Text style={styles.buttonText}>
@@ -52,7 +66,7 @@ function Landing() {
                 </RectButton>
             </View>
             <Text style={styles.totalConnection}>
-                Total de 285 conexões já realizadas {' '}
+                Total de {totalConnections} conexões já realizadas {' '}
                 <Image source={heartIcon} />
             </Text>
         </View>
